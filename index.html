@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chess Game</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Chess Game</h1>
+      <div class="game-container">
+        <div class="board-container">
+          <div class="coordinates horizontal">
+            <div>a</div>
+            <div>b</div>
+            <div>c</div>
+            <div>d</div>
+            <div>e</div>
+            <div>f</div>
+            <div>g</div>
+            <div>h</div>
+          </div>
+          <div class="board-wrapper">
+            <div class="coordinates vertical">
+              <div>8</div>
+              <div>7</div>
+              <div>6</div>
+              <div>5</div>
+              <div>4</div>
+              <div>3</div>
+              <div>2</div>
+              <div>1</div>
+            </div>
+            <div id="board" class="board"></div>
+          </div>
+        </div>
+        <div class="game-info">
+          <div class="status-panel">
+            <div id="turn" class="turn-indicator">White's turn</div>
+            <div id="check-status" class="check-status"></div>
+          </div>
+          <div class="control-panel">
+            <button id="reset" class="btn reset-btn">New Game</button>
+            <button id="undo" class="btn undo-btn">Undo Move</button>
+          </div>
+          <div id="move-history" class="move-history">
+            <h3>Move History</h3>
+            <div class="moves-list"></div>
+          </div>
+        </div>
+      </div>
+      <div id="promotion-modal" class="modal">
+        <div class="modal-content">
+          <h3>Choose promotion piece</h3>
+          <div class="promotion-options">
+            <div class="promotion-piece" data-piece="queen"></div>
+            <div class="promotion-piece" data-piece="rook"></div>
+            <div class="promotion-piece" data-piece="bishop"></div>
+            <div class="promotion-piece" data-piece="knight"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="chess.js"></script>
+  </body>
+</html>

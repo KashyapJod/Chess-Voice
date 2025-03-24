@@ -1,0 +1,381 @@
+/* General Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+/* Game Container */
+.game-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+/* Board Styles */
+.board-container {
+    position: relative;
+}
+
+.board-wrapper {
+    display: flex;
+}
+
+.coordinates {
+    display: flex;
+    font-weight: 500;
+    color: #666;
+}
+
+.coordinates.horizontal {
+    padding-left: 15px;
+    justify-content: space-around;
+    width: 560px;
+}
+
+.coordinates.vertical {
+    flex-direction: column;
+    justify-content: space-around;
+    height: 560px;
+    width: 15px;
+    padding: 10px 0;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    width: 560px;
+    height: 560px;
+    border: 2px solid #333;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.square {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    transition: background-color 0.2s;
+}
+
+.white {
+    background-color: #f0d9b5;
+}
+
+.black {
+    background-color: #b58863;
+}
+
+.piece {
+    width: 55px;
+    height: 55px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    transition: transform 0.3s ease, filter 0.2s;
+    z-index: 2;
+}
+
+.piece:hover {
+    filter: brightness(1.1);
+    transform: scale(1.05);
+}
+
+/* Piece images */
+.piece.white.king { background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg'); }
+.piece.white.queen { background-image: url('https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg'); }
+.piece.white.rook { background-image: url('https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg'); }
+.piece.white.bishop { background-image: url('https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg'); }
+.piece.white.knight { background-image: url('https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg'); }
+.piece.white.pawn { background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg'); }
+
+.piece.black.king { background-image: url('https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg'); }
+.piece.black.queen { background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg'); }
+.piece.black.rook { background-image: url('https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg'); }
+.piece.black.bishop { background-image: url('https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg'); }
+.piece.black.knight { background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg'); }
+.piece.black.pawn { background-image: url('https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg'); }
+
+/* Highlighted and Valid move indicators */
+.highlighted {
+    position: relative;
+}
+
+.highlighted::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 0, 0.3);
+    z-index: 1;
+}
+
+.valid-move {
+    position: relative;
+    cursor: pointer;
+}
+
+.valid-move::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: rgba(0, 128, 0, 0.4);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.valid-move.capture::after {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 0, 0, 0.2);
+    border-radius: 0;
+    border: 2px solid rgba(255, 0, 0, 0.5);
+}
+
+/* Animation */
+.piece.moving {
+    transform: scale(1.2);
+    z-index: 10;
+}
+
+.check-indicator {
+    position: relative;
+}
+
+.check-indicator::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 0, 0, 0.3);
+    z-index: 1;
+}
+
+/* Game Info Panel */
+.game-info {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.status-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.turn-indicator {
+    font-size: 1.5rem;
+    font-weight: bold;
+    padding: 0.5rem;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.check-status {
+    font-weight: bold;
+    color: #d32f2f;
+    text-align: center;
+    min-height: 24px;
+}
+
+.control-panel {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s, transform 0.1s;
+    flex: 1;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.reset-btn {
+    background-color: #d32f2f;
+    color: white;
+}
+
+.reset-btn:hover {
+    background-color: #b71c1c;
+}
+
+.undo-btn {
+    background-color: #2196f3;
+    color: white;
+}
+
+.undo-btn:hover {
+    background-color: #1976d2;
+}
+
+/* Move History */
+.move-history {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.move-history h3 {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.moves-list {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    overflow-y: auto;
+    max-height: 250px;
+    padding-right: 0.5rem;
+}
+
+.move-number {
+    font-weight: bold;
+    color: #666;
+}
+
+/* Promotion Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.modal h3 {
+    margin-bottom: 1.5rem;
+}
+
+.promotion-options {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.promotion-piece {
+    width: 60px;
+    height: 60px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.promotion-piece:hover {
+    transform: scale(1.1);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 960px) {
+    .game-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .game-info {
+        width: 560px;
+        margin-top: 1rem;
+    }
+    
+    .moves-list {
+        max-height: 150px;
+    }
+}
+
+@media (max-width: 600px) {
+    .board, .board-container, .coordinates.horizontal {
+        width: 320px;
+    }
+    
+    .board {
+        height: 320px;
+    }
+    
+    .coordinates.vertical {
+        height: 320px;
+    }
+    
+    .square {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .piece {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .game-info {
+        width: 320px;
+    }
+}
