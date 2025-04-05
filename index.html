@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chess Game</title>
+    <title>Voice Chess</title>
     <link rel="stylesheet" href="styles.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
@@ -12,7 +12,6 @@
   </head>
   <body>
     <div class="container">
-      <h1>Chess Game</h1>
       <div class="game-container">
         <div class="board-container">
           <div class="coordinates horizontal">
@@ -45,12 +44,16 @@
             <div id="check-status" class="check-status"></div>
           </div>
           <div class="control-panel">
-            <button id="reset" class="btn reset-btn">New Game</button>
-            <button id="undo" class="btn undo-btn">Undo Move</button>
-          </div>
-          <div id="move-history" class="move-history">
-            <h3>Move History</h3>
-            <div class="moves-list"></div>
+            <div class="button-row">
+              <button id="reset" class="btn reset-btn">New Game</button>
+              <button id="undo" class="btn undo-btn">Undo</button>
+            </div>
+            <button id="speech" class="btn speech-btn">
+              <i class="mic-icon"></i>Speak Move
+            </button>
+            <div class="help-link">
+              <a href="#" id="show-help">How to play</a>
+            </div>
           </div>
         </div>
       </div>
@@ -63,6 +66,31 @@
             <div class="promotion-piece" data-piece="bishop"></div>
             <div class="promotion-piece" data-piece="knight"></div>
           </div>
+        </div>
+      </div>
+      <div id="help-modal" class="modal">
+        <div class="modal-content help-content">
+          <span class="close-modal">&times;</span>
+          <h3>Voice Chess Instructions</h3>
+          <h4>Voice Commands:</h4>
+          <ul>
+            <li>
+              <strong>"e2 to e4"</strong> - Move from square to square
+              (recommended)
+            </li>
+            <li><strong>"Knight to f3"</strong> - Move piece to destination</li>
+            <li>
+              <strong>"Castle kingside"</strong> or
+              <strong>"Castle queenside"</strong> - Castling moves
+            </li>
+          </ul>
+          <p>
+            Click the <strong>Speak Move</strong> button and say your move
+            clearly.
+          </p>
+          <p>
+            For best results, always specify the starting and ending squares.
+          </p>
         </div>
       </div>
     </div>

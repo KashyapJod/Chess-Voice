@@ -4,7 +4,7 @@ class ChessGame {
         this.turn = 'white';
         this.selectedPiece = null;
         this.validMoves = [];
-        this.moveHistory = [];
+        this.moveHistory = []; // Keep this for undo functionality even without display
         this.promotionCallback = null;
         this.gameState = {
             boardState: Array(8).fill().map(() => Array(8).fill(null)),
@@ -78,8 +78,7 @@ class ChessGame {
             }
         }
         
-        // Clear move history display
-        document.querySelector('.moves-list').innerHTML = '';
+        // Clear move history display removed
         this.moveHistory = [];
         
         // Update the turn display
@@ -146,8 +145,424 @@ class ChessGame {
                 }
             });
         });
+
+        // Speech input button
+        document.getElementById('speech').addEventListener('click', () => {
+            this.handleSpeechInput();
+        });
+
+        // Help button
+        const helpLink = document.getElementById('show-help');
+        if (helpLink) {
+            helpLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('help-modal').classList.add('show');
+            });
+        }
+        
+        // Close modal
+        const closeModal = document.querySelector('.close-modal');
+        if (closeModal) {
+            closeModal.addEventListener('click', () => {
+                document.getElementById('help-modal').classList.remove('show');
+            });
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            const helpModal = document.getElementById('help-modal');
+            if (e.target === helpModal) {
+                helpModal.classList.remove('show');
+            }
+        });
     }
-    
+
+    async handleSpeechInput() {
+        if ('webkitSpeechRecognition' in window) {
+            const recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            
+            // Show feedback to user that we're listening
+            const speechBtn = document.getElementById('speech');
+            const originalText = speechBtn.textContent;
+            speechBtn.textContent = "Listening...";
+            speechBtn.classList.add('listening');
+
+            recognition.start();
+
+            recognition.onresult = async (event) => {
+                const speechResult = event.results[0][0].transcript.toLowerCase();
+                console.log('Speech recognized: ' + speechResult);
+                
+                // Update button to show we heard something
+                speechBtn.textContent = "Processing...";
+                
+                try {
+                    const move = await this.getMoveFromGemini(speechResult);
+                    if (move) {
+                        console.log('Move from Gemini:', move);
+                        this.executeMove(move);
+                    } else {
+                        this.showNotification('Could not interpret the move. Try saying something like "Pawn to e4" or "Knight to f3".');
+                    }
+                } catch (error) {
+                    console.error('Error processing speech input:', error);
+                    this.showNotification('Error processing speech input. Please try again.');
+                } finally {
+                    // Reset button
+                    speechBtn.textContent = originalText;
+                    speechBtn.classList.remove('listening');
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                this.showNotification('Speech recognition error. Please try again.');
+                speechBtn.textContent = originalText;
+                speechBtn.classList.remove('listening');
+            };
+
+            recognition.onend = () => {
+                console.log('Speech recognition ended.');
+                // Make sure button text is reset
+                speechBtn.textContent = originalText;
+                speechBtn.classList.remove('listening');
+            };
+        } else {
+            this.showNotification('Speech recognition is not supported in this browser. Try Chrome.');
+        }
+    }
+
+    async getMoveFromGemini(speechText) {
+        const apiKey = 'AIzaSyC4mCuQuGYBnS_8AVNesUDOQsk7_kBX6R8';
+        const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+        try {
+            // Include the current board state to help Gemini interpret the move correctly
+            const boardStateText = this.getBoardStateAsText();
+            const legalMovesText = this.getLegalMovesDescription();
+            
+            // Create a better prompt to improve interpretation accuracy
+            const prompt = `
+                You are an expert chess move interpreter. Convert the following spoken chess command to a move in the format "e2 to e4" (origin square to destination square).
+                
+                Current board state (where uppercase=white, lowercase=black):
+                ${boardStateText}
+                
+                Current turn: ${this.turn}
+                
+                Legal moves from current position include:
+                ${legalMovesText}
+
+                The player said: "${speechText}"
+                
+                IMPORTANT CASTLING INSTRUCTIONS:
+                - For "castle kingside" or "short castle" (for white): respond with "e1 to g1"
+                - For "castle queenside" or "long castle" (for white): respond with "e1 to c1"
+                - For "castle kingside" or "short castle" (for black): respond with "e8 to g8"
+                - For "castle queenside" or "long castle" (for black): respond with "e8 to c8"
+                
+                When the player means to capture a piece they might say "takes" or "capture". 
+                If there are multiple pieces of the same type that could move to the destination (like two knights that could both move to f3), 
+                examine the board state carefully to determine which one is the legal move.
+
+                IMPORTANT: Your response must be only in the format "e2 to e4" - just the starting square and the ending square separated by " to ".
+                If you can't determine the exact move, respond with ONLY: "unclear".
+            `;
+
+            const response = await fetch(geminiApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.candidates && data.candidates.length > 0) {
+                const moveText = data.candidates[0].content.parts[0].text.trim();
+                if (moveText.toLowerCase() !== 'unclear' && moveText.includes(' to ')) {
+                    return moveText;
+                }
+            }
+            return null;
+        } catch (error) {
+            console.error('Gemini API error:', error);
+            throw error;
+        }
+    }
+
+    async playBlackMove() {
+        // Show thinking indicator
+        const turnElement = document.getElementById('turn');
+        const originalText = turnElement.textContent;
+        turnElement.textContent = "Black is thinking...";
+        
+        try {
+            const apiKey = 'AIzaSyC4mCuQuGYBnS_8AVNesUDOQsk7_kBX6R8';
+            const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+            const boardStateText = this.getBoardStateAsText();
+            
+            // Generate a simpler list of moves in more direct format for the AI
+            const simpleLegalMoves = [];
+            // Loop through all squares on the board
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const piece = this.gameState.boardState[row][col];
+                    
+                    // Skip empty squares and opponent's pieces
+                    if (!piece || piece.color !== this.turn) continue;
+                    
+                    const fromSquare = `${String.fromCharCode(97 + col)}${8 - row}`;
+                    const pieceElement = document.querySelector(`[data-row="${row}"][data-col="${col}"]`).querySelector('.piece');
+                    const validMoves = this.calculateValidMoves(pieceElement);
+                    
+                    validMoves.forEach(move => {
+                        const toSquare = `${String.fromCharCode(97 + move.col)}${8 - move.row}`;
+                        simpleLegalMoves.push(`${fromSquare} to ${toSquare}`);
+                    });
+                }
+            }
+            
+            const prompt = `
+                You are playing as BLACK in a chess game. Choose one of these legal moves:
+                
+                Current board state (uppercase=white, lowercase=black):
+                ${boardStateText}
+                
+                Legal moves for black:
+                ${simpleLegalMoves.join('\n')}
+
+                Output only the exact move you choose in the format "e7 to e5". Nothing else.
+            `;
+
+            console.log("Sending prompt to AI:", prompt);
+
+            const response = await fetch(geminiApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { 
+                        temperature: 0.2,
+                        maxOutputTokens: 20
+                    }
+                }),
+            });
+
+            const data = await response.json();
+            console.log("AI response data:", data);
+            
+            if (data.candidates && data.candidates.length > 0) {
+                let moveText = data.candidates[0].content.parts[0].text.trim();
+                console.log('Raw AI response:', moveText);
+                
+                // Extract just the move part if there's extra text
+                const movePattern = /([a-h][1-8])\s+to\s+([a-h][1-8])/i;
+                const match = moveText.match(movePattern);
+                
+                if (match) {
+                    moveText = `${match[1]} to ${match[2]}`;
+                    console.log('Cleaned AI move:', moveText);
+                    
+                    // Execute the move after a small delay for better UX
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    this.executeMove(moveText);
+                    return true;
+                } else {
+                    console.error("Couldn't extract valid move format from AI response");
+                }
+            } else {
+                console.error("No valid candidates in the API response");
+            }
+            
+            this.showNotification("AI couldn't select a move. You can play as black for this turn.");
+            return false;
+        } catch (error) {
+            console.error('AI move error:', error);
+            this.showNotification('Error with AI player. You can play as black for now.');
+            return false;
+        } finally {
+            // Reset turn display if we're still on black's turn
+            if (this.turn === 'black') {
+                turnElement.textContent = originalText;
+            }
+        }
+    }
+
+    // Helper function to convert the current board state to text for Gemini
+    getBoardStateAsText() {
+        let result = '';
+        for (let row = 0; row < 8; row++) {
+            let rowText = '';
+            for (let col = 0; col < 8; col++) {
+                const piece = this.gameState.boardState[row][col];
+                if (piece) {
+                    // Use algebraic notation: uppercase for white, lowercase for black
+                    let symbol = ' ';
+                    switch (piece.type) {
+                        case 'pawn': symbol = 'P'; break;
+                        case 'knight': symbol = 'N'; break;
+                        case 'bishop': symbol = 'B'; break;
+                        case 'rook': symbol = 'R'; break;
+                        case 'queen': symbol = 'Q'; break;
+                        case 'king': symbol = 'K'; break;
+                    }
+                    // Lowercase for black pieces
+                    if (piece.color === 'black') {
+                        symbol = symbol.toLowerCase();
+                    }
+                    rowText += symbol;
+                } else {
+                    rowText += '.';
+                }
+            }
+            result += rowText + '\n';
+        }
+        return result;
+    }
+
+    // Helper function to get all legal moves for the current position
+    getLegalMovesDescription() {
+        const legalMoves = [];
+        
+        // Loop through all squares on the board
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const piece = this.gameState.boardState[row][col];
+                
+                // Skip empty squares and opponent's pieces
+                if (!piece || piece.color !== this.turn) continue;
+                
+                // Get the current position in algebraic notation
+                const fromSquare = `${String.fromCharCode(97 + col)}${8 - row}`;
+                
+                // Get a DOM reference to the piece
+                const pieceElement = document.querySelector(`[data-row="${row}"][data-col="${col}"]`).querySelector('.piece');
+                
+                // Calculate valid moves for this piece
+                const validMoves = this.calculateValidMoves(pieceElement);
+                
+                // Convert valid moves to algebraic notation
+                validMoves.forEach(move => {
+                    const toSquare = `${String.fromCharCode(97 + move.col)}${8 - move.row}`;
+                    const pieceType = piece.type.charAt(0).toUpperCase() + piece.type.slice(1);
+                    const targetPiece = this.gameState.boardState[move.row][move.col];
+                    const isCapture = targetPiece !== null;
+                    
+                    legalMoves.push(`${pieceType} from ${fromSquare} to ${toSquare}${isCapture ? ' (capturing)' : ''}`);
+                });
+            }
+        }
+        
+        return legalMoves.join('\n');
+    }
+
+    executeMove(move) {
+        // Convert algebraic notation to row/col indices
+        const [from, to] = move.split(' to ');
+        if (!from || !to) {
+            this.showNotification('Invalid move format. Please try again.');
+            return;
+        }
+
+        // Clean the strings just in case there's any extra whitespace
+        const cleanFrom = from.trim();
+        const cleanTo = to.trim();
+        
+        // Check that we have valid square references
+        if (cleanFrom.length !== 2 || cleanTo.length !== 2) {
+            this.showNotification(`Invalid square references: "${cleanFrom}" or "${cleanTo}"`);
+            return;
+        }
+
+        const fromCol = cleanFrom.charCodeAt(0) - 'a'.charCodeAt(0);
+        const fromRow = 8 - parseInt(cleanFrom[1]);
+        const toCol = cleanTo.charCodeAt(0) - 'a'.charCodeAt(0);
+        const toRow = 8 - parseInt(cleanTo[1]);
+
+        if (fromRow < 0 || fromRow > 7 || fromCol < 0 || fromCol > 7 || toRow < 0 || toRow > 7 || toCol < 0 || toCol > 7) {
+            this.showNotification('Invalid move coordinates. Please try again.');
+            return;
+        }
+
+        const oldSquare = document.querySelector(`[data-row="${fromRow}"][data-col="${fromCol}"]`);
+        const targetSquare = document.querySelector(`[data-row="${toRow}"][data-col="${toCol}"]`);
+
+        if (!oldSquare || !targetSquare) {
+            this.showNotification('Could not find the squares on the board.');
+            return;
+        }
+
+        const piece = oldSquare.querySelector('.piece');
+        if (!piece) {
+            this.showNotification('No piece found on the starting square.');
+            return;
+        }
+
+        // Check if the piece belongs to the current player
+        if (piece.dataset.color !== this.turn) {
+            this.showNotification(`It's ${this.turn}'s turn. You can't move the ${piece.dataset.color} ${piece.dataset.type}.`);
+            return;
+        }
+
+        // Select the piece
+        this.selectedPiece = piece;
+        
+        // Calculate valid moves for this piece
+        this.highlightValidMoves(piece);
+        
+        // Check if the target is a valid move
+        if (this.isValidMove(targetSquare)) {
+            this.movePiece(targetSquare);
+            this.clearHighlights();
+            this.selectedPiece = null;
+        } else {
+            // Provide more specific feedback about why the move is invalid
+            const pieceType = piece.dataset.type;
+            const fromSquare = `${String.fromCharCode(97 + fromCol)}${8 - fromRow}`;
+            const toSquare = `${String.fromCharCode(97 + toCol)}${8 - toRow}`;
+            
+            this.showNotification(`${pieceType} from ${fromSquare} cannot move to ${toSquare}. Try another move.`);
+            this.clearHighlights();
+            this.selectedPiece = null;
+        }
+    }
+
+    showNotification(message) {
+        // Check if notification container exists, create if not
+        let notificationContainer = document.getElementById('notification-container');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notification-container';
+            document.body.appendChild(notificationContainer);
+        }
+        
+        // Create and display notification
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.textContent = message;
+        notificationContainer.appendChild(notification);
+        
+        // Fade in
+        setTimeout(() => notification.classList.add('show'), 10);
+        
+        // Remove after delay
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    }
+
     showPromotionModal(color) {
         const modal = document.getElementById('promotion-modal');
         const options = modal.querySelectorAll('.promotion-piece');
@@ -213,7 +628,6 @@ class ChessGame {
         };
         this.setupBoard();
         this.updateTurnDisplay();
-        document.querySelector('.moves-list').innerHTML = '';
         document.getElementById('check-status').textContent = '';
     }
     
@@ -244,27 +658,6 @@ class ChessGame {
         
         // Update the turn and check display
         this.updateTurnDisplay();
-        
-        // Update the move history display
-        const movesList = document.querySelector('.moves-list');
-        
-        // If we're undoing a black move (turn is now white), remove the black move text
-        if (this.turn === 'white') {
-            const lastBlackMove = movesList.querySelector('.black-move:last-child');
-            if (lastBlackMove) {
-                lastBlackMove.textContent = '';
-            }
-        } 
-        // If we're undoing a white move (turn is now black), remove the entire row
-        else {
-            // Remove the last 3 elements (move number, white move, and black move)
-            const children = movesList.children;
-            if (children.length >= 3) {
-                movesList.removeChild(children[children.length - 1]); // black move
-                movesList.removeChild(children[children.length - 1]); // white move
-                movesList.removeChild(children[children.length - 1]); // move number
-            }
-        }
     }
 
     isValidMove(targetSquare) {
@@ -395,71 +788,22 @@ class ChessGame {
         if (inCheck) {
             if (this.isCheckmate(this.turn)) {
                 moveNotation += '#';
+                setTimeout(() => {
+                    this.showNotification(`Checkmate! ${this.turn === 'white' ? 'Black' : 'White'} wins!`);
+                }, 300);
             } else {
                 moveNotation += '+';
             }
         }
         
-        // Add move to the move history display
-        this.addMoveToHistory(moveNotation);
+        // Move history display functionality removed
         
         // Update the display
         this.updateTurnDisplay();
     }
     
     addMoveToHistory(notation) {
-        const movesList = document.querySelector('.moves-list');
-        const moveNumber = Math.ceil(this.gameState.fullMoveNumber / 2);
-        
-        // Check if we need to create a new row or update an existing one
-        if (this.turn === 'white') {
-            // Black just moved, complete the existing row
-            const moveNumberElements = movesList.querySelectorAll('.move-number');
-            const lastMoveNumberElement = moveNumberElements[moveNumberElements.length - 1];
-            
-            if (lastMoveNumberElement && lastMoveNumberElement.textContent === `${moveNumber}.`) {
-                // Find the associated black move cell (should be 2 elements after the move number)
-                const blackMoveElement = lastMoveNumberElement.nextElementSibling?.nextElementSibling;
-                if (blackMoveElement && blackMoveElement.classList.contains('black-move')) {
-                    blackMoveElement.textContent = notation;
-                    // Scroll to the bottom
-                    movesList.scrollTop = movesList.scrollHeight;
-                    return;
-                }
-            }
-            
-            // If we get here, we need to create a new row (shouldn't normally happen for black's move)
-            console.warn("Creating new row for black's move - this is unusual");
-        }
-        
-        // For white's move or if the above logic failed, create a new row
-        const moveNumberDiv = document.createElement('div');
-        moveNumberDiv.className = 'move-number';
-        moveNumberDiv.textContent = `${moveNumber}.`;
-        
-        const whiteMoveDiv = document.createElement('div');
-        whiteMoveDiv.className = 'white-move';
-        
-        const blackMoveDiv = document.createElement('div');
-        blackMoveDiv.className = 'black-move';
-        
-        // Set the appropriate move text
-        if (this.turn === 'white') {
-            // Black just moved
-            whiteMoveDiv.textContent = '';
-            blackMoveDiv.textContent = notation;
-        } else {
-            // White just moved
-            whiteMoveDiv.textContent = notation;
-            blackMoveDiv.textContent = '';
-        }
-        
-        movesList.appendChild(moveNumberDiv);
-        movesList.appendChild(whiteMoveDiv);
-        movesList.appendChild(blackMoveDiv);
-        
-        // Scroll to the bottom of the moves list
-        movesList.scrollTop = movesList.scrollHeight;
+        console.log(`Move: ${notation}`); // Just log the move for debugging
     }
 
     async performCastling(fromRow, fromCol, toRow, toCol) {
@@ -585,6 +929,11 @@ class ChessGame {
                 square.classList.remove('check-indicator');
             });
         }
+        
+        // When it's Black's turn, have Gemini play
+        if (this.turn === 'black') {
+            setTimeout(() => this.playBlackMove(), 500);
+        }
     }
 
     clearHighlights() {
@@ -687,7 +1036,7 @@ class ChessGame {
                     }
                 }
                 
-                // En passant capture
+                // En Passant capture
                 if (this.gameState.enPassantTarget && 
                     this.gameState.enPassantTarget.row === row + direction && 
                     this.gameState.enPassantTarget.col === captureCol) {
@@ -840,29 +1189,31 @@ class ChessGame {
             return false;
         }
         
+        // Use local variables instead of mutating castlingRights
+        let canKingside = castlingRights.kingSide;
+        let canQueenside = castlingRights.queenSide;
+        
         // Check if path is clear for kingside castling
-        if (castlingRights.kingSide) {
+        if (canKingside) {
             for (let c = col + 1; c < 7; c++) {
-                if (this.gameState.boardState[row][c] || 
-                   this.wouldBeInCheck(row, col, row, c, color)) {
-                    castlingRights.kingSide = false;
+                if (this.gameState.boardState[row][c] || this.wouldBeInCheck(row, col, row, c, color)) {
+                    canKingside = false;
                     break;
                 }
             }
         }
         
         // Check if path is clear for queenside castling
-        if (castlingRights.queenSide) {
+        if (canQueenside) {
             for (let c = col - 1; c > 0; c--) {
-                if (this.gameState.boardState[row][c] || 
-                   (c > 1 && this.wouldBeInCheck(row, col, row, c, color))) {
-                    castlingRights.queenSide = false;
+                if (this.gameState.boardState[row][c] || (c > 1 && this.wouldBeInCheck(row, col, row, c, color))) {
+                    canQueenside = false;
                     break;
                 }
             }
         }
         
-        return castlingRights.kingSide || castlingRights.queenSide;
+        return canKingside || canQueenside;
     }
 
     isInCheck(color) {

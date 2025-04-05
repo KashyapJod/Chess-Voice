@@ -6,11 +6,12 @@
 }
 
 body {
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, sans-serif;
     line-height: 1.6;
-    color: #333;
-    background-color: #f5f5f5;
+    color: #444;
+    background-color: #f9f9f9;
     padding: 20px;
+    min-height: 100vh;
 }
 
 .container {
@@ -18,19 +19,13 @@ body {
     margin: 0 auto;
 }
 
-h1 {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    color: #333;
-}
-
-/* Game Container */
+/* Game Container - adjusted to not need margin-top since title is removed */
 .game-container {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 2rem;
-    margin-top: 1rem;
+    gap: 1.5rem;
+    padding-top: 0.5rem;
 }
 
 /* Board Styles */
@@ -45,7 +40,7 @@ h1 {
 .coordinates {
     display: flex;
     font-weight: 500;
-    color: #666;
+    color: #777;
 }
 
 .coordinates.horizontal {
@@ -67,8 +62,10 @@ h1 {
     grid-template-columns: repeat(8, 1fr);
     width: 560px;
     height: 560px;
-    border: 2px solid #333;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 1px solid #ccc;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .square {
@@ -78,15 +75,15 @@ h1 {
     justify-content: center;
     align-items: center;
     position: relative;
-    transition: background-color 0.2s;
+    transition: background-color 0.3s ease;
 }
 
 .white {
-    background-color: #f0d9b5;
+    background-color: #eee;
 }
 
 .black {
-    background-color: #b58863;
+    background-color: #d3d3d3;
 }
 
 .piece {
@@ -132,8 +129,9 @@ h1 {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 255, 0, 0.3);
+    background-color: rgba(255, 235, 59, 0.25);
     z-index: 1;
+    transition: background-color 0.3s ease;
 }
 
 .valid-move {
@@ -146,17 +144,18 @@ h1 {
     position: absolute;
     width: 20px;
     height: 20px;
-    background-color: rgba(0, 128, 0, 0.4);
+    background-color: rgba(76, 175, 80, 0.4);
     border-radius: 50%;
     z-index: 1;
+    transition: background-color 0.3s ease;
 }
 
 .valid-move.capture::after {
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 0, 0, 0.2);
+    background-color: rgba(244, 67, 54, 0.2);
     border-radius: 0;
-    border: 2px solid rgba(255, 0, 0, 0.5);
+    border: 2px solid rgba(244, 67, 54, 0.5);
 }
 
 /* Animation */
@@ -176,116 +175,151 @@ h1 {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 0, 0, 0.3);
+    background-color: rgba(244, 67, 54, 0.3);
     z-index: 1;
 }
 
 /* Game Info Panel */
 .game-info {
     width: 300px;
+    min-width: 280px;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
     background-color: #fff;
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
 }
 
 .status-panel {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    margin-bottom: 1rem;
 }
 
 .turn-indicator {
-    font-size: 1.5rem;
-    font-weight: bold;
-    padding: 0.5rem;
-    background-color: #f5f5f5;
-    border-radius: 4px;
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding: 0.75rem;
+    background-color: #f0f0f0;
+    border-radius: 8px;
     text-align: center;
+    color: #555;
 }
 
 .check-status {
-    font-weight: bold;
-    color: #d32f2f;
+    font-weight: 600;
+    color: #e53935;
     text-align: center;
     min-height: 24px;
 }
 
 .control-panel {
     display: flex;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.button-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.button-row .btn {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
 }
 
 .btn {
-    padding: 0.75rem 1rem;
+    padding: 0.8rem 1rem;
     font-size: 1rem;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 500;
-    transition: background-color 0.2s, transform 0.1s;
-    flex: 1;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
 }
 
 .btn:hover {
     transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .btn:active {
     transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .reset-btn {
-    background-color: #d32f2f;
+    background-color: #e53935;
     color: white;
 }
 
 .reset-btn:hover {
-    background-color: #b71c1c;
+    background-color: #d32f2f;
 }
 
 .undo-btn {
-    background-color: #2196f3;
+    background-color: #1e88e5;
     color: white;
 }
 
 .undo-btn:hover {
-    background-color: #1976d2;
+    background-color: #1565c0;
 }
 
-/* Move History */
-.move-history {
-    flex: 1;
-    overflow: hidden;
+/* Speech Button */
+.speech-btn {
+    background-color: #4CAF50;
+    color: white;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 1.1rem;
+    padding: 1rem;
 }
 
-.move-history h3 {
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #eee;
+.speech-btn:hover {
+    background-color: #388E3C;
 }
 
-.moves-list {
-    display: grid;
-    grid-template-columns: auto 1fr 1fr;
-    gap: 0.5rem;
+.speech-btn.listening {
+    background-color: #FF5722;
+    animation: pulse 1.5s infinite;
+}
+
+.mic-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Help Link */
+.help-link {
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+.help-link a {
+    color: #1e88e5;
+    text-decoration: none;
     font-size: 0.9rem;
-    overflow-y: auto;
-    max-height: 250px;
-    padding-right: 0.5rem;
 }
 
-.move-number {
-    font-weight: bold;
-    color: #666;
+.help-link a:hover {
+    text-decoration: underline;
 }
 
-/* Promotion Modal */
+/* Modal Styles */
 .modal {
     display: none;
     position: fixed;
@@ -294,7 +328,7 @@ h1 {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 100;
+    z-index: 1000;
     justify-content: center;
     align-items: center;
 }
@@ -305,37 +339,35 @@ h1 {
 
 .modal-content {
     background-color: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    text-align: center;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    max-width: 90%;
+    width: 400px;
 }
 
-.modal h3 {
-    margin-bottom: 1.5rem;
+.help-content {
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
-.promotion-options {
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
+.help-content h4 {
+    margin: 1rem 0 0.5rem;
 }
 
-.promotion-piece {
-    width: 60px;
-    height: 60px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
+.help-content ul {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.close-modal {
+    float: right;
+    font-size: 1.5rem;
+    font-weight: bold;
     cursor: pointer;
-    transition: transform 0.2s;
 }
 
-.promotion-piece:hover {
-    transform: scale(1.1);
-}
-
-/* Responsive Adjustments */
+/* Responsive Design */
 @media (max-width: 960px) {
     .game-container {
         flex-direction: column;
@@ -345,37 +377,60 @@ h1 {
     .game-info {
         width: 560px;
         margin-top: 1rem;
+        max-width: 95%;
     }
     
-    .moves-list {
-        max-height: 150px;
+    .button-row {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .control-panel {
+        gap: 1rem;
     }
 }
 
 @media (max-width: 600px) {
     .board, .board-container, .coordinates.horizontal {
-        width: 320px;
+        width: 100%;
+        max-width: 400px;
     }
     
     .board {
-        height: 320px;
+        height: auto;
+        aspect-ratio: 1/1;
     }
     
     .coordinates.vertical {
-        height: 320px;
+        height: auto;
     }
     
     .square {
-        width: 40px;
-        height: 40px;
+        width: auto;
+        height: auto;
     }
     
     .piece {
-        width: 35px;
-        height: 35px;
+        width: 80%;
+        height: 80%;
+        max-width: 45px;
+        max-height: 45px;
     }
     
     .game-info {
-        width: 320px;
+        width: 100%;
+        max-width: 400px;
+    }
+    
+    .btn {
+        padding: 0.75rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .button-row {
+        flex-direction: column;
+        gap: 0.5rem;
     }
 }
